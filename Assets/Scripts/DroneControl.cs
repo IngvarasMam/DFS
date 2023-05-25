@@ -6,6 +6,8 @@ public class DroneControl : MonoBehaviour
 {
     public bool isFlying = true;
 
+    public Rigidbody rb;
+
     public float HorizontalSensitivity = 5f;
     public float VerticalSensitivity = 5f;
     public int VerticalInversion = -1;
@@ -14,15 +16,19 @@ public class DroneControl : MonoBehaviour
     public float SideMovementSpeed = 0.1f;
     public float VerticalMovementSpeed = 0.125f;
 
+    public float SpeedOverTime = 0.01f;
+    public float CapSpeedOverTime = 1;
+    private float MinSpeedOverTime;
+
     private float xRotation = 0.0f;
     private float yRotation = 0.0f;
 
     private float SlowerVerticalMovementSpeed;
 
-
     public void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
+        MinSpeedOverTime = SpeedOverTime;
     }
 
     public void FixedUpdate()
@@ -33,58 +39,71 @@ public class DroneControl : MonoBehaviour
         }
         if (isFlying)
         {
-            ///Camera
-            xRotation += VerticalInversion * VerticalSensitivity * Input.GetAxis("Mouse Y");
-            yRotation += HorizontalSensitivity * Input.GetAxis("Mouse X");
-
-            transform.eulerAngles = new Vector3(xRotation, yRotation, 0);
-
-
-            ///Movement
-            if (Input.GetKey(KeyCode.W))
-            {
-                transform.position += new Vector3(
-                    transform.forward.x * ForwardMovementSpeed,
-                    0,
-                    transform.forward.z * ForwardMovementSpeed
-                );
-            }
-
-            if (Input.GetKey(KeyCode.S))
-            {
-                transform.position += new Vector3(
-                    transform.forward.x * (-ForwardMovementSpeed / 1.95f),
-                    0,
-                    transform.forward.z * (-ForwardMovementSpeed / 1.95f)
-                );
-            }
-
-            if (Input.GetKey(KeyCode.A))
-            {
-                transform.Translate(-transform.right * SideMovementSpeed);
-            }
-
-            if (Input.GetKey(KeyCode.D))
-            {
-                transform.Translate(transform.right * SideMovementSpeed);
-            }
-
-            if (Input.GetKey(KeyCode.Space))
-            {
-                transform.Translate(Vector3.up * VerticalMovementSpeed);
-            }
-
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                transform.Translate(Vector3.down * VerticalMovementSpeed);
-            }
-
-
-
-            ///Gravity
-            SlowerVerticalMovementSpeed = VerticalMovementSpeed * 0.1f;
-
-            transform.Translate(Vector3.down * SlowerVerticalMovementSpeed);
+            Camera();
+            Movement();
+            Gravity();
         }
+    }
+    public void Camera()
+    {
+        xRotation += VerticalInversion * VerticalSensitivity * Input.GetAxis("Mouse Y");
+        yRotation += HorizontalSensitivity * Input.GetAxis("Mouse X");
+
+        transform.eulerAngles = new Vector3(xRotation, yRotation, 0);
+    }
+    public void Movement()
+    {
+        if (Input.GetKey(KeyCode.W))
+        {
+            if (SpeedOverTime <= CapSpeedOverTime)
+            {
+                SpeedOverTime = SpeedOverTime + 0.001f;
+            }
+
+            rb.velocity = transform.forward * ForwardMovementSpeed * SpeedOverTime * 100;
+            /*transform.position += new Vector3(
+                transform.forward.x * ForwardMovementSpeed * SpeedOverTime,
+                0,
+                transform.forward.z * ForwardMovementSpeed * SpeedOverTime
+            );*/
+        }
+        if (!Input.anyKey)
+        {
+            rb.velocity = new Vector3(0, 0);
+            SpeedOverTime = MinSpeedOverTime;
+        }
+
+        if (Input.GetKey(KeyCode.S))
+        {
+            rb.velocity = -transform.forward * ForwardMovementSpeed * 50;
+        }
+
+        if (Input.GetKey(KeyCode.A))
+        {
+            rb.velocity = -transform.right * SideMovementSpeed * 50;
+            //transform.Translate(-transform.right * SideMovementSpeed);
+        }
+
+        if (Input.GetKey(KeyCode.D))
+        {
+            rb.velocity = transform.right * SideMovementSpeed * 50;
+        }
+
+        if (Input.GetKey(KeyCode.Space))
+        {
+            rb.velocity = transform.up * VerticalMovementSpeed*50;
+            //transform.Translate(Vector3.up * VerticalMovementSpeed);
+        }
+
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            transform.Translate(Vector3.down * VerticalMovementSpeed);
+        }
+    }
+    public void Gravity()
+    {
+        SlowerVerticalMovementSpeed = VerticalMovementSpeed * 0.1f;
+
+        //rb.velocity = -transform.up * SlowerVerticalMovementSpeed*50;
     }
 }
